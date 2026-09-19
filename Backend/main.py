@@ -5,6 +5,9 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from database import get_database_connection
+from ai import extract_announcement
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # FUNCTIONS FOR USER AUTHENTICATION:
 
@@ -79,6 +82,9 @@ class Announcement(BaseModel):
     requirements: str | None = None
     notes: str | None = None
 
+class RawAnnouncement(BaseModel):
+    text: str = Field(..., min_length=10)
+
 class UserRegister(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
@@ -105,6 +111,14 @@ app = FastAPI(
     title="CampusPulse API",
     description="Backend API for the CampusPulse college announcement and opportunity management platform.",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
@@ -452,10 +466,11 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     )
 
     return {
-        "message": "Login successful",
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    "message": "Login successful",
+    "access_token": access_token,
+    "token_type": "bearer",
+    "P_ID": db_user["P_ID"]
+}
 
 @app.get(
     "/user/{pid}",
@@ -709,12 +724,45 @@ def remove_bookmark(A_ID: int, P_ID: int):
         "A_ID": A_ID
     }
 
-"""
+
 #AI:
 @app.post("/announcements/analyze")
-def analyze_announcement(announcement: Announcement):
-    return {
-        "message": "Announcement analyzed successfully",
-        "announcement": announcement
-    }
-"""
+def analyze_announcement(data: RawAnnouncement):
+
+    try:
+        result = extract_announcement(data.text)
+        connection = get_database_connection()
+        cursor = connection.cursor()
+
+        query = """
+            INSERT INTO announcement
+            (title, category, deadline, event_date, department, topic,
+             source, important_link, requirements, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            result.title,
+            result.category,
+            result.deadline,
+            result.event_date,
+            result.department,
+            result.topic,
+            result.source,
+            str(result.important_link) if result.important_link else None,
+            result.requirements,
+            result.notes
+        )
+        cursor.execute(query, values)
+        connection.commit()
+        announcement_id = cursor.lastrowid
+        cursor.close()
+        connection.close()
+        return {
+            "message": "Announcement analyzed and stored successfully",
+            "A_ID": announcement_id,
+            "announcement": result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI extraction failed: {str(e)}"
+        )

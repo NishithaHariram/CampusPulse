@@ -21,3 +21,18 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Frontend build/dependencies
+node_modules/
+dist/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Archives
+*.zip
