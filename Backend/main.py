@@ -7,15 +7,23 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from database import get_database_connection
 from ai import extract_announcement
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
 
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 # FUNCTIONS FOR USER AUTHENTICATION:
 
 pwd_context = CryptContext(schemes=["bcrypt"],deprecated="auto")
 
-SECRET_KEY = "campuspulse-secret-key-change-this-later"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+)
+
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set in the environment")
 
 def hash_password(password: str):
     return pwd_context.hash(password)
@@ -68,7 +76,29 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             status_code=401,
             detail="Invalid authentication credentials"
         )
-    
+
+def get_current_user_id(current_user: str = Depends(get_current_user)):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT P_ID FROM personal_info WHERE username = %s",
+        (current_user,)
+    )
+
+    user = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authenticated user not found"
+        )
+
+    return user["P_ID"]   
+
 #CLASSES FOR ANNOUNCEMENTS AND USERS:
 class Announcement(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
@@ -207,7 +237,7 @@ def get_announcements(
 def get_announcement(announcement_id: int):
 
     connection = get_database_connection()
-    cursor = connection.cursor()
+    cursor = connection.cursor(dictionary=True)
 
     query = "SELECT * FROM announcement WHERE A_ID = %s"
     values = (announcement_id,)
@@ -233,7 +263,10 @@ def get_announcement(announcement_id: int):
         422: {"description": "Invalid announcement data"}
     }
 )
-def create_announcement(announcement: Announcement):
+def create_announcement(
+    announcement: Announcement,
+    current_user: str = Depends(get_current_user)
+):
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -282,7 +315,11 @@ def create_announcement(announcement: Announcement):
         422: {"description": "Invalid announcement data or ID"}
     }
 )
-def update_announcement(announcement_id: int,announcement: Announcement):
+def update_announcement(
+    announcement_id: int,
+    announcement: Announcement,
+    current_user: str = Depends(get_current_user)
+):
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -340,7 +377,10 @@ def update_announcement(announcement_id: int,announcement: Announcement):
         422: {"description": "Invalid announcement ID"}
     }
 )
-def delete_announcement(announcement_id: int):
+def delete_announcement(
+    announcement_id: int,
+    current_user: str = Depends(get_current_user)
+):
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -516,7 +556,16 @@ def get_user(pid: int,current_user: str = Depends(get_current_user)):
         422: {"description": "Invalid user data"}
     }
 )
-def update_user(pid: int, user: UserUpdate):
+def update_user(
+    pid: int,
+    user: UserUpdate,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    if pid != current_user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only update your own profile"
+        )
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -568,7 +617,16 @@ def update_user(pid: int, user: UserUpdate):
         422: {"description": "Invalid user ID"}
     }
 )
-def delete_user(pid: int):
+def delete_user(
+    pid: int,
+    current_user_id: int = Depends(get_current_user_id)
+):
+
+    if pid != current_user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete your own account"
+        )
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -602,7 +660,10 @@ def delete_user(pid: int):
         422: {"description": "Invalid user ID"}
     }
 )
-def get_bookmarks(P_ID: int):
+def get_bookmarks(
+    P_ID: int | None = None,
+    current_user_id: int = Depends(get_current_user_id)
+):
 
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
@@ -650,7 +711,13 @@ def get_bookmarks(P_ID: int):
         422: {"description": "Invalid ID"}
     }
 )
-def bookmark_announcement(A_ID: int, P_ID: int):
+def bookmark_announcement(
+    A_ID: int,
+    P_ID: int | None = None,
+    current_user_id: int = Depends(get_current_user_id)
+):
+
+    P_ID = current_user_id
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -694,7 +761,13 @@ def bookmark_announcement(A_ID: int, P_ID: int):
         422: {"description": "Invalid ID"}
     }
 )
-def remove_bookmark(A_ID: int, P_ID: int):
+def remove_bookmark(
+    A_ID: int,
+    P_ID: int | None = None,
+    current_user_id: int = Depends(get_current_user_id)
+):
+
+    P_ID = current_user_id
 
     connection = get_database_connection()
     cursor = connection.cursor()
@@ -727,7 +800,10 @@ def remove_bookmark(A_ID: int, P_ID: int):
 
 #AI:
 @app.post("/announcements/analyze")
-def analyze_announcement(data: RawAnnouncement):
+def analyze_announcement(
+    data: RawAnnouncement,
+    current_user: str = Depends(get_current_user)
+):
 
     try:
         result = extract_announcement(data.text)

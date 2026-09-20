@@ -3,7 +3,10 @@ from pydantic import BaseModel, HttpUrl
 from datetime import date
 from dotenv import load_dotenv
 import os
+import time
+
 load_dotenv()
+
 
 class AIAnnouncement(BaseModel):
     title: str
@@ -16,9 +19,13 @@ class AIAnnouncement(BaseModel):
     important_link: HttpUrl | None = None
     requirements: str | None = None
     notes: str | None = None
+
+
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+
 def extract_announcement(raw_text: str):
+
     prompt = f"""
 Extract structured information from this college announcement.
 
@@ -43,8 +50,50 @@ Rules:
 Announcement:
 {raw_text}
 """
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config={"response_mime_type": "application/json","response_schema": AIAnnouncement,})
-    return AIAnnouncement.model_validate_json(response.text)
+
+    # Primary model + fallback model
+    models = [
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite"
+    ]
+
+    last_error = None
+
+    for model in models:
+
+        # Retry temporary failures up to 3 times
+        for attempt in range(3):
+
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_schema": AIAnnouncement,
+                    }
+                )
+
+                return AIAnnouncement.model_validate_json(response.text)
+
+            except Exception as e:
+                last_error = e
+
+                error_text = str(e)
+
+                # Retry only temporary/unavailable errors
+                if "503" in error_text or "UNAVAILABLE" in error_text:
+
+                    wait_time = 2 ** attempt
+                    time.sleep(wait_time)
+                    continue
+
+                # Other errors should not be hidden
+                raise e
+
+        # If primary model failed 3 times,
+        # automatically try the fallback model.
+
+    raise Exception(
+        f"AI extraction failed after retries and fallback model: {last_error}"
+    )
