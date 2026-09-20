@@ -2,78 +2,81 @@
 
 ### A centralized student announcement and opportunity management platform
 
-CampusPulse is a student-focused platform designed to solve a common problem in college life: **important information is scattered across WhatsApp groups, emails, college websites, PDFs, notice boards, department announcements, clubs, and other sources.**
+CampusPulse is a full-stack student-focused platform designed to solve a common problem in college life: important information is scattered across WhatsApp groups, emails, college websites, PDFs, notice boards, department announcements, clubs, and other sources.
 
-Because of this, students often miss important opportunities and deadlines such as hackathons, coding competitions, workshops, internships, scholarships, examinations, assignments, and placement opportunities.
+Because of this, students can easily miss hackathons, coding competitions, workshops, internships, scholarships, examinations, assignments, placement opportunities, and important deadlines.
 
-CampusPulse aims to bring this information together into a **single, organized and searchable platform**.
+CampusPulse brings this information into one centralized, searchable platform.
 
 ---
 
 ## 🎯 Problem Statement
 
-College students receive academic and extracurricular information from multiple disconnected sources. This makes it difficult to keep track of relevant announcements, deadlines, opportunities, and events.
+College students receive academic and extracurricular information from multiple disconnected sources.
 
-CampusPulse provides a centralized platform where students can:
+CampusPulse aims to provide a single platform where students can:
 
 * Discover announcements and opportunities
-* Search for relevant information
-* Filter announcements by different criteria
-* Track important dates and deadlines
-* Save/bookmark announcements
-* Maintain a personal user account
-* Eventually receive more personalized information based on their interests
+* Search announcements
+* Filter announcements by category and date
+* View announcement details
+* Track important deadlines and event dates
+* Bookmark announcements
+* Manage their personal account
+* Use AI to extract structured information from raw announcements
 
-The long-term goal is to make CampusPulse an intelligent platform that can **automatically analyze and organize unstructured announcements using AI**.
+The long-term goal is to make CampusPulse an intelligent student information platform that can understand announcements and help students discover information relevant to them.
 
 ---
 
 # 🚀 Current Project Status
 
-CampusPulse is currently in the **backend development, integration, and testing stage**.
+**Status: 🚧 Working Prototype**
 
-The core backend functionality has been implemented and tested, including:
+CampusPulse currently contains a working backend, database, frontend, authentication system, bookmark functionality, search/filter functionality, and AI-powered announcement extraction.
+
+The current prototype is being tested locally through the integrated frontend and backend.
+
+### Current working areas
 
 * User registration
-* Password hashing
-* User authentication/login
-* User profile functionality
-* Announcement CRUD operations
-* Announcement search
-* Announcement filtering
-* Bookmark functionality
-* User-specific data
-* API authentication and authorization
-* Backend/database integration
-* End-to-end integration testing
+* User login and authentication
+* JWT-based protected requests
+* User profile
+* Announcement management
+* Announcement details
+* Search
+* Filtering
+* Bookmark management
+* AI announcement extraction
+* Frontend-backend integration
+* MySQL database integration
 
-The project has also been pushed to GitHub and is under active development.
+The project is currently undergoing stabilization and bug fixing before moving toward a beta version.
 
 ---
 
-# 🧩 Current Features
+# ✨ Features
 
 ## 👤 User Management
 
 Users can:
 
-* Register an account
+* Create an account
 * Log in securely
-* Access authenticated functionality
-* View/update their profile information
-* Work with user-specific data
+* Access authenticated features
+* View their profile
+* Manage user-specific information
 
-Passwords are **hashed rather than stored as plain text**.
+Passwords are hashed rather than stored as plain text.
 
 ---
 
-## 📢 Announcement Management
+## 📢 Announcements
 
-CampusPulse supports CRUD operations for announcements.
+CampusPulse supports announcement management through the backend API.
 
-### Create
-
-Users can create announcements containing information such as:
+Announcements contain information such as:
 
 * Title
 * Category
@@ -86,66 +89,95 @@ Users can create announcements containing information such as:
 * Requirements
 * Notes
 
-### Read
+Users can:
 
-Users can retrieve:
-
-* All announcements
-* Individual announcements
-
-### Update
-
-Existing announcements can be modified.
-
-### Delete
-
-Announcements can be removed when necessary.
+* View all announcements
+* View individual announcements
+* Search announcements
+* Filter announcements
+* Interact with announcements through the frontend
 
 ---
 
 ## 🔎 Search & Filtering
 
-The backend supports searching and filtering announcements.
-
-The system can be used to narrow announcements based on information such as:
+The application supports searching and filtering announcements using information such as:
 
 * Search terms
 * Category
-* Date
-* Deadline
+* Dates
+* Deadlines
 
-Multiple filters can also be combined where applicable.
+This allows students to quickly narrow down announcements relevant to them.
 
 ---
 
 ## 🔖 Bookmarks
 
-Users can save announcements they are interested in.
+Students can save announcements they are interested in.
 
-Implemented functionality includes:
+The backend supports bookmark operations including:
 
 * Add bookmark
-* Retrieve saved announcements
+* Retrieve a user's bookmarks
 * Remove bookmark
 
-This allows users to keep track of opportunities they don't want to lose.
+The frontend provides bookmark interaction so students can maintain a personal collection of useful announcements.
+
+---
+
+## 🤖 AI Announcement Extraction
+
+CampusPulse includes an AI-powered announcement extraction feature.
+
+### Workflow
+
+```text
+Raw Announcement
+       ↓
+     Gemini
+       ↓
+Structured Information
+       ↓
+Pydantic Validation
+       ↓
+CampusPulse Backend
+       ↓
+MySQL
+```
+
+The AI extracts fields such as:
+
+* Title
+* Category
+* Deadline
+* Event date
+* Department
+* Topic
+* Source
+* Important link
+* Requirements
+* Notes
+
+The system is designed to avoid inventing missing information and uses structured output validation before the data is processed further.
 
 ---
 
 # 🔐 Authentication & Security
 
-CampusPulse includes an authentication system for protected functionality.
+CampusPulse uses authenticated API requests for protected functionality.
 
-Implemented features include:
+Current authentication functionality includes:
 
 * User registration
-* Secure password hashing
+* Password hashing
 * Login
-* Authentication
-* Authorization for protected endpoints
-* Validation of authenticated requests
+* JWT authentication
+* Protected endpoints
+* Authorization checks
+* User-specific data access
 
-Authentication and protected endpoints have been tested using the API documentation/testing interface.
+The frontend stores the authentication token locally and sends it with protected API requests.
 
 ---
 
@@ -153,25 +185,35 @@ Authentication and protected endpoints have been tested using the API documentat
 
 CampusPulse currently uses **MySQL** as its relational database.
 
-The database stores information related to users, announcements, and bookmarks.
-
 ### Main entities
 
 ```text
 User
-  │
-  ├───────────────┐
-  │               │
-  ▼               ▼
-Profile        Bookmarks
+ │
+ ├───────────────┐
+ │               │
+ ▼               ▼
+Profile       Bookmarks
                   │
                   ▼
              Announcements
 ```
 
-### Announcement fields
+### User
 
-The announcement data currently includes:
+```text
+P_ID
+name
+email
+username
+password
+year
+college
+stream
+preferences
+```
+
+### Announcement
 
 ```text
 A_ID
@@ -187,23 +229,7 @@ requirements
 notes
 ```
 
-### User fields
-
-The user data includes information such as:
-
-```text
-P_ID
-name
-email
-username
-password
-year
-college
-stream
-preferences
-```
-
-### Bookmark fields
+### Bookmark
 
 ```text
 P_ID
@@ -217,88 +243,92 @@ Saved_At
 
 ## Backend
 
-* **Python**
-* **FastAPI**
-* **Uvicorn**
+* Python
+* FastAPI
+* Uvicorn
+* Pydantic
+* MySQL Connector
+
+## Frontend
+
+* React
+* JavaScript
+* Vite
+* Bolt.new-assisted frontend development
 
 ## Database
 
-* **MySQL**
-* MySQL Connector
+* MySQL
 
-## Data Validation
+## AI
 
-* **Pydantic**
+* Google Gemini API
 
 ## Authentication
 
+* JWT
 * Password hashing
-* Token-based authentication
 
 ## Development & Testing
 
-* FastAPI Swagger/OpenAPI documentation
+* VS Code
+* FastAPI Swagger/OpenAPI
 * Git
 * GitHub
+* ngrok for local frontend-backend connectivity during development
 
 ---
 
-# 🏗️ Current Architecture
+# 🏗️ Architecture
 
-The current backend follows a basic API-driven architecture:
+The current prototype follows an API-driven full-stack architecture:
 
 ```text
-                 ┌──────────────────┐
-                 │     Client /     │
-                 │  API Interface   │
-                 └────────┬─────────┘
-                          │
-                          │ HTTP Requests
-                          ▼
-                 ┌──────────────────┐
-                 │     FastAPI      │
-                 │     Backend      │
-                 └────────┬─────────┘
-                          │
-                          │ Database Queries
-                          ▼
-                 ┌──────────────────┐
-                 │      MySQL       │
-                 │     Database     │
-                 └──────────────────┘
+                 ┌─────────────────────┐
+                 │      React          │
+                 │     Frontend        │
+                 └──────────┬──────────┘
+                            │
+                            │ HTTP / REST API
+                            ▼
+                 ┌─────────────────────┐
+                 │      FastAPI        │
+                 │      Backend       │
+                 └───────┬─────┬───────┘
+                         │     │
+             ┌───────────┘     └────────────┐
+             ▼                              ▼
+     ┌────────────────┐             ┌────────────────┐
+     │     MySQL      │             │  Gemini AI     │
+     │    Database    │             │   Processing   │
+     └────────────────┘             └────────────────┘
 ```
 
-The planned architecture will eventually expand to include the frontend and AI processing layer.
+During local development, the frontend can communicate with the locally running FastAPI backend through an ngrok tunnel.
+
+The planned beta architecture will replace this development tunnel with deployed backend and frontend services.
 
 ---
 
-# 🧪 Testing Completed
+# 🧪 Testing
 
-The core backend functionality has been tested through API requests and end-to-end flows.
-
-Testing completed includes:
+The project has undergone testing across the major backend and frontend flows.
 
 ### Authentication
 
-* Registration testing
-* Login testing
-* Protected endpoint testing
-* Authorization testing
+* Registration
+* Login
+* JWT authentication
+* Protected requests
+* Logout/login flow
 
 ### Announcements
 
-* Create announcement
 * Retrieve announcements
 * Retrieve individual announcement
-* Update announcement
-* Delete announcement
-
-### Search & Filtering
-
-* Search functionality
-* Category filtering
-* Date/deadline filtering
-* Combined filtering
+* Search
+* Filtering
+* Announcement interaction
 
 ### Bookmarks
 
@@ -306,186 +336,131 @@ Testing completed includes:
 * Retrieve bookmarks
 * Remove bookmark
 
+### AI
+
+* Raw announcement submission
+* AI extraction
+* Structured response validation
+* Backend integration
+
 ### Integration
 
-The complete user flow has been tested from authentication through announcement interaction and bookmarking.
+The frontend and backend have been connected and tested as an integrated application.
 
----
-
-# 🤖 Planned AI Integration
-
-One of the main future goals of CampusPulse is to introduce an AI-powered announcement processing system.
-
-The planned workflow is:
-
-```text
-        Raw Announcement
-               │
-               ▼
-        ┌─────────────┐
-        │  AI / LLM   │
-        │   Analysis  │
-        └──────┬──────┘
-               │
-               ▼
-      Structured Information
-               │
-               ▼
-          Validation
-               │
-               ▼
-            MySQL
-```
-
-For example, an announcement such as:
-
-> "The Department of AI & DS is organizing a 24-hour hackathon on September 25. Students interested in participating should register before September 20."
-
-could be automatically transformed into structured information such as:
-
-```text
-Title: AI & DS 24-Hour Hackathon
-Category: Hackathon
-Department: AI & DS
-Event Date: September 25
-Registration Deadline: September 20
-```
-
-The AI output will be validated before being stored in the database.
-
----
-
-# 🎨 Planned Frontend
-
-A user-friendly frontend will eventually be connected to the existing backend.
-
-Planned pages/features include:
-
-* Login
-* Registration
-* Student dashboard
-* Announcement cards
-* Announcement details
-* Search
-* Filters
-* Bookmarked announcements
-* User profile
-* Announcement creation/editing
-
-The frontend will communicate with the FastAPI backend through REST APIs.
+Current work is focused on fixing remaining UI/API interaction issues and improving the reliability of the complete user flow.
 
 ---
 
 # 🗺️ Roadmap
 
-### ✅ Completed
+## ✅ Completed
 
 * [x] Project setup
 * [x] FastAPI backend
 * [x] MySQL database connection
-* [x] Announcement CRUD
 * [x] User registration
 * [x] Password hashing
 * [x] Login/authentication
+* [x] JWT authorization
 * [x] User profile
-* [x] User-specific functionality
-* [x] Bookmark system
+* [x] Announcement CRUD
 * [x] Search
 * [x] Filtering
-* [x] Authentication testing
-* [x] CRUD testing
-* [x] Bookmark testing
-* [x] End-to-end backend integration testing
+* [x] Bookmark system
+* [x] AI announcement extraction
+* [x] Frontend development
+* [x] Frontend-backend integration
 * [x] Git/GitHub setup
-* [x] Project pushed to GitHub
+* [x] Initial end-to-end testing
 
-### 🔄 In Progress / Next
+## 🔄 Current Stage
 
-* [ ] Backend cleanup and refactoring
-* [ ] Additional validation and error handling
-* [ ] AI-powered announcement extraction
-* [ ] Frontend development
-* [ ] Frontend-backend integration
-* [ ] Deployment
-* [ ] Improved personalization
-* [ ] Final testing
-* [ ] Documentation and project polish
+* [ ] Fix remaining frontend/API bugs
+* [ ] Complete user-facing bookmark management
+* [ ] Complete user account management
+* [ ] Improve error handling
+* [ ] Complete stabilization testing
+* [ ] Prepare beta version
+* [ ] Deploy backend
+* [ ] Deploy frontend
+* [ ] Connect cloud database
 
-### 🔮 Future Scope
+## 🔮 Future Scope
 
 * [ ] Personalized announcement recommendations
-* [ ] AI-based announcement categorization
-* [ ] Automatic deadline extraction
 * [ ] Relevance scoring
-* [ ] Notifications/reminders
-* [ ] Advanced recommendation system
+* [ ] Automatic deadline extraction
+* [ ] Email notifications
+* [ ] Reminder system
+* [ ] Chrome extension
+* [ ] PWA/mobile experience
+* [ ] Native mobile application
 * [ ] Admin/moderator functionality
 * [ ] Analytics dashboard
-* [ ] Mobile application
+* [ ] Improved AI categorization
+* [ ] Automated announcement collection
 
 ---
 
-# 💡 Why CampusPulse?
+# 🌱 Future Vision
 
-CampusPulse is intended to go beyond being another announcement board.
+CampusPulse is intended to evolve beyond a basic announcement board.
 
-The goal is to create a system that can eventually understand **what an announcement contains, who it is relevant to, and what action a student needs to take**.
-
-For example:
+The long-term workflow is:
 
 ```text
 Announcement
-     ↓
+      ↓
 AI understands content
-     ↓
+      ↓
 Extracts important information
-     ↓
+      ↓
 Categorizes announcement
-     ↓
+      ↓
 Stores structured data
-     ↓
+      ↓
 Matches student interests
-     ↓
-Helps student discover relevant opportunities
+      ↓
+Helps students discover relevant opportunities
 ```
 
-This makes CampusPulse particularly suitable for exploring the combination of:
-
-**Software Development + Backend Engineering + Databases + AI/Data Science**
+The larger goal is to create a student information platform that helps students stay informed, discover opportunities, and avoid missing important deadlines.
 
 ---
 
 # 📚 Learning Goals
 
-This project is also being developed as a practical learning project to strengthen skills in:
+CampusPulse is also a practical learning project focused on strengthening skills in:
 
 * Backend development
 * REST API design
 * FastAPI
-* Database design
-* SQL
+* SQL and database design
 * Authentication
 * API security
 * Git/GitHub
 * AI integration
+* React frontend development
 * Full-stack application development
 * Software architecture
 * Testing and debugging
 
-The project is being developed incrementally, with an emphasis on understanding the underlying concepts rather than simply assembling pre-written code.
+The project is being developed incrementally with an emphasis on understanding the underlying concepts rather than simply assembling pre-written code.
 
 ---
 
-# 👩‍💻 Project Status
+## 👩‍💻 Project Status
 
-**Status:** 🚧 Under Development
+**CampusPulse — Working Prototype 🚧**
 
-CampusPulse currently has a functioning backend with core user, announcement, search/filtering, bookmark, authentication, and integration functionality implemented and tested.
+CampusPulse currently combines:
 
-The next major development stage is to add the **AI processing layer and frontend**, followed by integration, deployment, and final project refinement.
+**React + FastAPI + MySQL + JWT Authentication + Gemini AI**
+
+The immediate goal is to stabilize the existing prototype and prepare it for a small beta release.
 
 ---
 
-## 🌱 Future Vision
+## 🌟 Vision
 
 > **CampusPulse — Helping students stay informed, discover opportunities, and never miss what matters.**
