@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { User, Mail, AtSign, GraduationCap, BookOpen, Tag, Edit3, Save, X, Loader2, CheckCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { User, Mail, AtSign, GraduationCap, BookOpen, Tag, Edit3, Save, X, Loader2, CheckCircle2, Trash2, AlertTriangle } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import ErrorMessage from "../components/ErrorMessage";
 import { useAuth } from "../context/AuthContext";
-import { getUserProfile, updateUserProfile, friendlyErrorMessage } from "../services/api";
+import { getUserProfile, updateUserProfile, deleteUser, friendlyErrorMessage } from "../services/api";
 import { mockProfile } from "../services/mockData";
 
 const YEARS = [
@@ -19,7 +20,8 @@ const YEARS = [
 const YEAR_LABELS = YEARS.reduce((acc, y) => { acc[y.value] = y.label; return acc; }, {});
 
 export default function ProfilePage() {
-  const { pid, token, username, setProfile, loadProfile } = useAuth();
+  const navigate = useNavigate();
+  const { pid, token, username, setProfile, loadProfile, logout } = useAuth();
   const [profile, setLocalProfile] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,9 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [usedMock, setUsedMock] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchProfile = useCallback(async () => {
     if (!pid) {
@@ -93,6 +98,24 @@ export default function ProfilePage() {
       setError(friendlyErrorMessage(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!pid) {
+      setDeleteError("User ID is missing. Please log in again.");
+      return;
+    }
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteUser(pid);
+      logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setDeleteError(friendlyErrorMessage(err));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -256,8 +279,63 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Danger zone — Delete Account */}
+        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50/50 p-6 sm:p-8">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-rose-100">
+              <AlertTriangle className="h-5 w-5 text-rose-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-rose-900">Danger Zone</h2>
+              <p className="mt-1 text-sm text-rose-700">
+                Deleting your account permanently removes your profile and all associated data. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowDeleteConfirm(true); setDeleteError(""); }}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-600 hover:text-white"
+          >
+            <Trash2 className="h-4 w-4" /> Delete Account
+          </button>
+        </div>
       </main>
       <Footer />
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100">
+                <AlertTriangle className="h-5 w-5 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Delete Account?</h3>
+            </div>
+            <p className="mb-5 text-sm text-slate-600">
+              Are you sure you want to delete your account? This action cannot be undone.
+            </p>
+            {deleteError && <div className="mb-4"><ErrorMessage message={deleteError} /></div>}
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
+              >
+                {deleting ? <><Loader2 className="h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="h-4 w-4" /> Yes, Delete My Account</>}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

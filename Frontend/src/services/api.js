@@ -1,7 +1,7 @@
 // Central API configuration for CampusPulse
 // Change this base URL when the backend moves to a different host.
 
-export const API_BASE_URL ="http://127.0.0.1:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 const TOKEN_KEY = "campuspulse_token";
 const USER_PID_KEY = "campuspulse_pid";
@@ -449,6 +449,32 @@ export async function analyzeAnnouncement(
 }
 
 // -----------------------------------------------------------------------
+// PERSONAL NOTES API
+// -----------------------------------------------------------------------
+
+export async function getPersonalNote(announcementId) {
+  return getJSON(
+    `/announcements/${announcementId}/personal-note`,
+    { withAuth: true }
+  );
+}
+
+export async function updatePersonalNote(announcementId, note) {
+  return putJSON(
+    `/announcements/${announcementId}/personal-note`,
+    { note },
+    { withAuth: true }
+  );
+}
+
+export async function deletePersonalNote(announcementId) {
+  return deleteJSON(
+    `/announcements/${announcementId}/personal-note`,
+    { withAuth: true }
+  );
+}
+
+// -----------------------------------------------------------------------
 // USER-FRIENDLY ERROR MESSAGES
 // -----------------------------------------------------------------------
 
@@ -466,9 +492,10 @@ export function friendlyErrorMessage(error) {
 
   if (
     error.status === 0 ||
-    lower.includes("failed to fetch")
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror")
   ) {
-    return "Unable to connect to CampusPulse server. Make sure the backend is running.";
+    return "Unable to connect to CampusPulse. Please try again.";
   }
 
   if (error.status === 401) {
@@ -480,7 +507,15 @@ export function friendlyErrorMessage(error) {
   }
 
   if (error.status === 404) {
-    return "The requested item was not found.";
+    return "The requested item could not be found.";
+  }
+
+  if (error.status === 422) {
+    return "Please check the information and try again.";
+  }
+
+  if (error.status === 500) {
+    return "Something went wrong on the server. Please try again.";
   }
 
   if (

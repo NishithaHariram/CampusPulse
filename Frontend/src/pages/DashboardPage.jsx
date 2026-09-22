@@ -11,6 +11,7 @@ import ErrorMessage from "../components/ErrorMessage";
 import { Link } from "react-router-dom";
 import { getAnnouncements, getBookmarks, addBookmark, removeBookmark, friendlyErrorMessage } from "../services/api";
 import { mockAnnouncements } from "../services/mockData";
+import { isDeadlinePassed } from "../utils/announcement";
 import { useAuth } from "../context/AuthContext";
 
 export default function DashboardPage() {
@@ -234,7 +235,9 @@ export default function DashboardPage() {
               {announcements.length} {announcements.length === 1 ? "announcement" : "announcements"}
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {announcements.map((a) => (
+              {announcements
+                .filter((a) => !isDeadlinePassed(a.deadline))
+                .map((a) => (
                 <AnnouncementCard
                   key={a.A_ID}
                   announcement={a}

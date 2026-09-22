@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Calendar, Clock, MapPin, Tag, FileText, Link2,
-  Bookmark, BookmarkCheck, Loader2, AlertCircle, ExternalLink
+  Bookmark, BookmarkCheck, Loader2, AlertCircle, ExternalLink,
+  StickyNote, Edit3, Save, X, CheckCircle2, Info
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -12,7 +13,9 @@ import EmptyState from "../components/EmptyState";
 import ErrorMessage from "../components/ErrorMessage";
 import { useAuth } from "../context/AuthContext";
 import {
-  getAnnouncement, addBookmark, removeBookmark, friendlyErrorMessage,
+  getAnnouncement, addBookmark, removeBookmark,
+  getPersonalNote, updatePersonalNote, deletePersonalNote,
+  friendlyErrorMessage,
 } from "../services/api";
 import { findMockAnnouncement } from "../services/mockData";
 import { formatDate, isDeadlineUrgent, isDeadlinePassed } from "../utils/announcement";
@@ -28,6 +31,13 @@ export default function AnnouncementDetailPage() {
   const [usedMock, setUsedMock] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
+  const [personalNote, setPersonalNote] = useState("");
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [noteError, setNoteError] = useState("");
 
   const fetchAnnouncement = useCallback(async () => {
     setLoading(true);
@@ -54,6 +64,68 @@ export default function AnnouncementDetailPage() {
   useEffect(() => {
     fetchAnnouncement();
   }, [fetchAnnouncement]);
+
+  const fetchPersonalNote = useCallback(async () => {
+    if (!pid || !id) {
+      setPersonalNote("");
+      return;
+    }
+    setNoteError("");
+    try {
+      const data = await getPersonalNote(id);
+      const noteText = data?.note ?? "";
+      setPersonalNote(noteText);
+    } catch (err) {
+      if (err.status === 404) {
+        setPersonalNote("");
+      } else {
+        setNoteError(friendlyErrorMessage(err));
+        setPersonalNote("");
+      }
+    }
+  }, [pid, id]);
+
+  useEffect(() => {
+    if (pid && id) {
+      fetchPersonalNote();
+      setNoteEditing(false);
+      setNoteSaved(false);
+    } else {
+      setPersonalNote("");
+      setNoteEditing(false);
+    }
+  }, [pid, id, fetchPersonalNote]);
+
+  function handleNoteEdit() {
+    setNoteDraft(personalNote);
+    setNoteEditing(true);
+    setNoteSaved(false);
+    setNoteError("");
+  }
+
+  function handleNoteCancel() {
+    setNoteEditing(false);
+    setNoteDraft("");
+    setNoteError("");
+  }
+
+  async function handleNoteSave() {
+    const trimmed = noteDraft.trim();
+    setNoteSaving(true);
+    setNoteError("");
+    try {
+      await updatePersonalNote(id, trimmed);
+      setPersonalNote(trimmed);
+      setNoteEditing(false);
+      setNoteDraft("");
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 3000);
+    } catch (err) {
+      setNoteError(friendlyErrorMessage(err));
+    } finally {
+      setNoteSaving(false);
+    }
+  }
 
   async function handleBookmarkToggle() {
     if (!pid || !announcement) return;
@@ -236,6 +308,76 @@ export default function AnnouncementDetailPage() {
             <Bookmark className="h-4 w-4" /> View Saved
           </Link>
         </div>
+
+        {/* My Notes section */}
+        {pid && (
+          <div className="mt-6 card-base p-6 sm:p-8">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <StickyNote className="h-5 w-5 text-brand-600" />
+                <h2 className="text-lg font-bold text-slate-900">My Notes</h2>
+              </div>
+              {!noteEditing && (
+                <button
+                  onClick={handleNoteEdit}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50"
+                >
+                  <Edit3 className="h-4 w-4" /> {personalNote ? "Edit" : "Add Note"}
+                </button>
+              )}
+            </div>
+
+            {noteError && (
+              <div className="mb-3"><ErrorMessage message={noteError} /></div>
+            )}
+
+            {noteSaved && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" /> Note saved.
+              </div>
+            )}
+
+            {noteEditing ? (
+              <div>
+                <textarea
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  rows={5}
+                  placeholder="Write your personal note for this announcement..."
+                  className="input-field w-full resize-none"
+                  autoFocus
+                />
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={handleNoteSave}
+                    disabled={noteSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {noteSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
+                  </button>
+                  <button
+                    onClick={handleNoteCancel}
+                    disabled={noteSaving}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" /> Cancel
+                  </button>
+                </div>
+              </div>
+            ) : personalNote ? (
+              <p className="whitespace-pre-line rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">{personalNote}</p>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-sm text-slate-400">
+                <Info className="h-4 w-4 flex-shrink-0" />
+                You haven't added a personal note for this announcement yet.
+              </div>
+            )}
+
+            <p className="mt-3 text-xs text-slate-400">
+              Your notes are private and visible only to you.
+            </p>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

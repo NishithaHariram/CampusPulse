@@ -137,6 +137,9 @@ class UserUpdate(BaseModel):
     stream: str | None = None
     preferences: str | None = None
 
+class PersonalNote(BaseModel):
+    note: str = Field(..., min_length=1)
+    
 app = FastAPI(
     title="CampusPulse API",
     description="Backend API for the CampusPulse college announcement and opportunity management platform.",
@@ -155,8 +158,8 @@ app.add_middleware(
 def read_root():
     return {"message": "CampusPulse API is working!"}
 
-# ANNOUNCEMENTS
 
+# ANNOUNCEMENTS
 @app.get(
     "/announcements",
     summary="Get announcements",
@@ -401,6 +404,138 @@ def delete_announcement(
         raise HTTPException(status_code=404,detail="Announcement not found")
 
     return {"message": "Announcement deleted successfully","A_ID": announcement_id}
+
+
+# PERSONAL NOTES
+@app.get(
+    "/announcements/{A_ID}/personal-note",
+    summary="Get personal note",
+    description="Retrieve the authenticated user's personal note for an announcement."
+)
+def get_personal_note(
+    A_ID: int,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT note, updated_at
+        FROM personal_note
+        WHERE P_ID = %s AND A_ID = %s
+        """,
+        (current_user_id, A_ID)
+    )
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if result is None:
+        return {
+            "P_ID": current_user_id,
+            "A_ID": A_ID,
+            "note": None
+        }
+
+    return {
+        "P_ID": current_user_id,
+        "A_ID": A_ID,
+        "note": result["note"],
+        "updated_at": result["updated_at"]
+    }
+
+@app.put(
+    "/announcements/{A_ID}/personal-note",
+    summary="Create or update personal note",
+    description="Create or update the authenticated user's personal note for an announcement."
+)
+def save_personal_note(
+    A_ID: int,
+    personal_note: PersonalNote,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    connection = get_database_connection()
+    cursor = connection.cursor()
+
+    # Make sure the announcement exists
+    cursor.execute(
+        "SELECT A_ID FROM announcement WHERE A_ID = %s",
+        (A_ID,)
+    )
+
+    if cursor.fetchone() is None:
+        cursor.close()
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Announcement not found"
+        )
+
+    # Create or update the user's personal note
+    cursor.execute(
+        """
+        INSERT INTO personal_note (P_ID, A_ID, note)
+        VALUES (%s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            note = VALUES(note),
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (current_user_id, A_ID, personal_note.note)
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "Personal note saved successfully",
+        "P_ID": current_user_id,
+        "A_ID": A_ID,
+        "note": personal_note.note
+    }
+
+@app.delete(
+    "/announcements/{A_ID}/personal-note",
+    summary="Delete personal note",
+    description="Delete the authenticated user's personal note for an announcement."
+)
+def delete_personal_note(
+    A_ID: int,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    connection = get_database_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM personal_note
+        WHERE P_ID = %s AND A_ID = %s
+        """,
+        (current_user_id, A_ID)
+    )
+
+    deleted = cursor.rowcount
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    if deleted == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Personal note not found"
+        )
+
+    return {
+        "message": "Personal note deleted successfully",
+        "P_ID": current_user_id,
+        "A_ID": A_ID
+    }
 
 
 #USER:
@@ -661,7 +796,6 @@ def delete_user(
     }
 )
 def get_bookmarks(
-    P_ID: int | None = None,
     current_user_id: int = Depends(get_current_user_id)
 ):
 
@@ -689,16 +823,17 @@ def get_bookmarks(
         ORDER BY b.Saved_At DESC
     """
 
-    cursor.execute(query, (P_ID,))
+    cursor.execute(query, (current_user_id,))
     bookmarks = cursor.fetchall()
 
     cursor.close()
     connection.close()
 
     return {
-        "P_ID": P_ID,
+        "P_ID": current_user_id,
         "bookmarks": bookmarks
     }
+
 
 @app.post(
     "/announcements/{A_ID}/bookmark",

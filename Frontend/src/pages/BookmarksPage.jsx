@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Bookmark, Trash2, Loader2 } from "lucide-react";
+import { Bookmark, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AnnouncementCard from "../components/AnnouncementCard";
@@ -16,6 +16,7 @@ export default function BookmarksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [removingIds, setRemovingIds] = useState(new Set());
+  const [removeSuccess, setRemoveSuccess] = useState("");
 
   const fetchBookmarks = useCallback(async () => {
     if (!pid) {
@@ -42,15 +43,37 @@ export default function BookmarksPage() {
     fetchBookmarks();
   }, [fetchBookmarks]);
 
+  function bookmarkErrorMessage(err) {
+    if (!err) return "Something went wrong. Please try again.";
+    if (err.status === 401) return "Your session has expired. Please log in again.";
+    if (err.status === 404) return "Bookmark not found.";
+    if (err.status === 500) return "Something went wrong. Please try again.";
+    if (err.status === 0 || (err.message || "").toLowerCase().includes("failed to fetch"))
+      return "Unable to connect to CampusPulse.";
+    return friendlyErrorMessage(err);
+  }
+
   async function handleRemove(announcementId) {
+    if (removingIds.has(announcementId)) return;
     setRemovingIds((prev) => new Set(prev).add(announcementId));
+    setError("");
     try {
       await removeBookmark(announcementId, pid);
       setBookmarks((prev) =>
         prev.filter((b) => (b.A_ID || b.announcement?.A_ID) !== announcementId)
       );
+      setRemoveSuccess("Bookmark removed.");
+      setTimeout(() => setRemoveSuccess(""), 3000);
     } catch (err) {
-      setError(friendlyErrorMessage(err));
+      if (err.status === 404) {
+        setBookmarks((prev) =>
+          prev.filter((b) => (b.A_ID || b.announcement?.A_ID) !== announcementId)
+        );
+        setRemoveSuccess("Bookmark not found.");
+        setTimeout(() => setRemoveSuccess(""), 3000);
+      } else {
+        setError(bookmarkErrorMessage(err));
+      }
     } finally {
       setRemovingIds((prev) => {
         const next = new Set(prev);
@@ -73,6 +96,11 @@ export default function BookmarksPage() {
           </p>
         </div>
 
+        {removeSuccess && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" /> {removeSuccess}
+          </div>
+        )}
         {error && <div className="mb-4"><ErrorMessage message={error} onRetry={fetchBookmarks} /></div>}
 
         {loading ? (
@@ -93,14 +121,26 @@ export default function BookmarksPage() {
               {bookmarks.map((b) => {
                 const ann = b.announcement || b;
                 const aid = ann.A_ID || b.A_ID;
+                const isRemoving = removingIds.has(aid);
                 return (
                   <div key={aid} className="relative">
                     <AnnouncementCard
                       announcement={ann}
                       isBookmarked={true}
                       onBookmarkToggle={handleRemove}
-                      bookmarkLoading={removingIds.has(aid)}
+                      bookmarkLoading={isRemoving}
                     />
+                    <button
+                      onClick={() => handleRemove(aid)}
+                      disabled={isRemoving}
+                      className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isRemoving ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Removing...</>
+                      ) : (
+                        <><Trash2 className="h-4 w-4" /> Remove Bookmark</>
+                      )}
+                    </button>
                   </div>
                 );
               })}

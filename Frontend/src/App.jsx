@@ -10,6 +10,7 @@ import AnnouncementDetailPage from "./pages/AnnouncementDetailPage";
 import BookmarksPage from "./pages/BookmarksPage";
 import ProfilePage from "./pages/ProfilePage";
 import AIAnalyzerPage from "./pages/AIAnalyzerPage";
+import HistoryPage from "./pages/HistoryPage";
 
 function Layout({ children }) {
   return (
@@ -69,6 +70,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AIAnalyzerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <HistoryPage />
           </ProtectedRoute>
         }
       />

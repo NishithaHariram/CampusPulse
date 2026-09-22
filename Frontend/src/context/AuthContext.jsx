@@ -50,18 +50,18 @@ export function AuthProvider({ children }) {
   }, [pid, token, profile, loadProfile]);
 
   const login = useCallback(async (user, password) => {
-  const data = await apiLoginUser(user, password);
-
-  setTokenState(data.access_token);
-  setUsernameState(user);
-
-  if (data?.P_ID !== undefined && data?.P_ID !== null) {
-    setPidState(Number(data.P_ID));
-    setUserPid(data.P_ID);
-  }
-
-  return data;
-}, []);
+    const data = await apiLoginUser(user, password);
+    setTokenState(data.access_token);
+    setUsernameState(user);
+    // The backend login response does not include P_ID, so try to recover it:
+    // 1. loginUser() in api.js may have extracted it from the JWT claims.
+    // 2. It may already be in localStorage from a prior registration.
+    const storedPid = getUserPid();
+    if (storedPid) {
+      setPidState(storedPid);
+    }
+    return data;
+  }, []);
 
   const setPid = useCallback((newPid) => {
     setPidState(newPid);

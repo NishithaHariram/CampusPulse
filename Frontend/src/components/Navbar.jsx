@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { LayoutDashboard, Bookmark, Sparkles, User, LogOut, Menu, X, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Bookmark, Sparkles, User, LogOut, Menu, X, GraduationCap, History } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
@@ -11,6 +11,7 @@ export default function Navbar() {
   const navLinks = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/bookmarks", label: "Saved", icon: Bookmark },
+    { to: "/history", label: "History", icon: History },
     { to: "/ai-analyzer", label: "AI Analyzer", icon: Sparkles },
   ];
 
