@@ -1,8 +1,7 @@
 // Central API configuration for CampusPulse
 // Change this base URL when the backend moves to a different host.
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://campuspulse-backend-c74m.onrender.com";
 const TOKEN_KEY = "campuspulse_token";
 const USER_PID_KEY = "campuspulse_pid";
 const USERNAME_KEY = "campuspulse_username";
